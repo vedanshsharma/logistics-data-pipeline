@@ -122,4 +122,4 @@ def produce(num_rows=100):
         print(data)
     
 
-print(produce(2))
+produce(2)

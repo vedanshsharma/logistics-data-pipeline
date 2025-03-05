@@ -10,7 +10,8 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import StringSerializer
 import random
 
-from common.config import * 
+from common.config import *
+
 
 def delivery_report(err, msg):
     """
@@ -33,8 +34,11 @@ def delivery_report(err, msg):
     if err is not None:
         print("Delivery failed for User record {}: {}".format(msg.key(), err))
         return
-    print('User record {} successfully produced to {} [{}] at offset {}'.format(
-        msg.key(), msg.topic(), msg.partition(), msg.offset()))
+    print(
+        "User record {} successfully produced to {} [{}] at offset {}".format(
+            msg.key(), msg.topic(), msg.partition(), msg.offset()
+        )
+    )
     print("=====================")
 
 
@@ -45,7 +49,6 @@ kafka_config = {
     "sasl.username": confluent_kafka_api_key,
     "sasl.password": confluent_kafka_api_secret,
 }
-print(kafka_config)
 
 # Create a Schema Registry client
 schema_registry_client = SchemaRegistryClient(
@@ -59,27 +62,30 @@ schema_registry_client = SchemaRegistryClient(
 )
 
 # Fetch the latest Avro schema for the value
-subject_name = 'logistics-data-value'
+subject_name = "logistics-data-value"
 schema_str = schema_registry_client.get_latest_version(subject_name).schema.schema_str
 print("Schema from Registery---")
 print(schema_str)
 print("=====================")
 
 # Create Avro Serializer for the value
-key_serializer = StringSerializer('utf_8')
+key_serializer = StringSerializer("utf_8")
 avro_serializer = AvroSerializer(schema_registry_client, schema_str)
 
 
 # Define the SerializingProducer
-producer = SerializingProducer({
-    'bootstrap.servers': kafka_config['bootstrap.servers'],
-    'security.protocol': kafka_config['security.protocol'],
-    'sasl.mechanisms': kafka_config['sasl.mechanisms'],
-    'sasl.username': kafka_config['sasl.username'],
-    'sasl.password': kafka_config['sasl.password'],
-    'key.serializer': key_serializer,  # Key will be serialized as a string
-    'value.serializer': avro_serializer  # Value will be serialized as Avro
-})
+producer = SerializingProducer(
+    {
+        "bootstrap.servers": kafka_config["bootstrap.servers"],
+        "security.protocol": kafka_config["security.protocol"],
+        "sasl.mechanisms": kafka_config["sasl.mechanisms"],
+        "sasl.username": kafka_config["sasl.username"],
+        "sasl.password": kafka_config["sasl.password"],
+        "key.serializer": key_serializer,  # Key will be serialized as a string
+        "value.serializer": avro_serializer,  # Value will be serialized as Avro
+    }
+)
+
 
 def produce(num_rows=100):
     # Define possible values for categorical fields
@@ -104,9 +110,9 @@ def produce(num_rows=100):
         gps_provider = random.choice(gps_providers)
         booking_id = f"MVCV{random.randint(1000000, 9999999)}/082021"
         market_reg = random.choice(market_regular)
-        booking_date = int((
-            datetime.now() - timedelta(days=random.randint(1, 365))
-        ).timestamp() * 1000)
+        booking_date = int(
+            (datetime.now() - timedelta(days=random.randint(1, 365))).timestamp() * 1000
+        )
         vehicle_no = f"{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.randint(10, 99)}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}{random.randint(1000, 9999)}"
         origin_city = random.choice(cities)
         origin_state = random.choice(states)
@@ -123,11 +129,13 @@ def produce(num_rows=100):
         data_ping_time = f"{random.randint(0, 23):02d}:{random.randint(0, 59):02d}.{random.randint(0, 9)}"
         planned_eta = f"{random.randint(1, 72):02d}:{random.randint(0, 59):02d}.{random.randint(0, 9)}"
         current_location = f"{random.choice(cities)}, {random.choice(states)}"
-        actual_eta = int((
-            datetime.fromtimestamp(booking_date / 1e3)
-            + timedelta(days=random.randint(1, 10))
-            ).timestamp() * 1000)
-
+        actual_eta = int(
+            (
+                datetime.fromtimestamp(booking_date / 1e3)
+                + timedelta(days=random.randint(1, 10))
+            ).timestamp()
+            * 1000
+        )
 
         curr_lat = round(random.uniform(8.0, 37.0), 4)
         curr_lon = round(random.uniform(68.0, 97.0), 4)
@@ -139,14 +147,20 @@ def produce(num_rows=100):
         dest_code = (
             f"{dest_city[:3].upper()}{dest_state[:3].upper()}{random.randint(100, 999)}"
         )
-        trip_start_date = int((
-            datetime.fromtimestamp(booking_date / 1e3)
-            + timedelta(days=random.randint(1, 23))
-            ).timestamp() * 1000)
-        trip_end_date = int((
-            datetime.fromtimestamp(booking_date / 1e3)
-            + timedelta(days=random.randint(1, 23))
-            ).timestamp() * 1000)
+        trip_start_date = int(
+            (
+                datetime.fromtimestamp(booking_date / 1e3)
+                + timedelta(days=random.randint(1, 23))
+            ).timestamp()
+            * 1000
+        )
+        trip_end_date = int(
+            (
+                datetime.fromtimestamp(booking_date / 1e3)
+                + timedelta(days=random.randint(1, 23))
+            ).timestamp()
+            * 1000
+        )
         distance = random.randint(100, 1000)
         vehicle_type = random.choice(vehicle_types)
         min_kms = random.randint(300, 600)
@@ -160,47 +174,47 @@ def produce(num_rows=100):
 
         # Create a data row
         data = {
-            'GpsProvider' : gps_provider,
-            'BookingID' : booking_id,
-            'Market_Regular' : market_reg,
-            'BookingID_Date' : booking_date,
-            'vehicle_no' : vehicle_no,
-            'Origin_Location' : origin_location,
-            'Destination_Location' : dest_location,
-            'Org_lat_lon' : org_lat_lon,
-            'Des_lat_lon' : des_lat_lon,
-            'Data_Ping_time' : data_ping_time,
-            'Planned_ETA' : planned_eta,
-            'Current_Location' : current_location,
-            'DestinationLocation' : dest_location,
-            'actual_eta' : actual_eta,
-            'Curr_lat' : curr_lat,
-            'Curr_lon' : curr_lon,
-            'ontime' : ontime,
-            'delay' : delay,
-            'OriginLocation_Code' : origin_code,
-            'DestinationLocation_Code' : dest_code,
-            'trip_start_date' : trip_start_date,
-            'trip_end_date' : trip_end_date,
-            'TRANSPORTATION_DISTANCE_IN_KM' : distance,
-            'vehicleType' : vehicle_type,
-            'Minimum_kms_to_be_covered_in_a_day' : min_kms,
-            'Driver_Name' : driver_name,
-            'Driver_MobileNo' : driver_mobile,
-            'customerID' : customer_id,
-            'customerNameCode' : customer_name,
-            'supplierID' : supplier_id,
-            'supplierNameCode' : supplier_name,
-            'Material_Shipped' : material_shipped,
+            "GpsProvider": gps_provider,
+            "BookingID": booking_id,
+            "Market_Regular": market_reg,
+            "BookingID_Date": booking_date,
+            "vehicle_no": vehicle_no,
+            "Origin_Location": origin_location,
+            "Destination_Location": dest_location,
+            "Org_lat_lon": org_lat_lon,
+            "Des_lat_lon": des_lat_lon,
+            "Data_Ping_time": data_ping_time,
+            "Planned_ETA": planned_eta,
+            "Current_Location": current_location,
+            "DestinationLocation": dest_location,
+            "actual_eta": actual_eta,
+            "Curr_lat": curr_lat,
+            "Curr_lon": curr_lon,
+            "ontime": ontime,
+            "delay": delay,
+            "OriginLocation_Code": origin_code,
+            "DestinationLocation_Code": dest_code,
+            "trip_start_date": trip_start_date,
+            "trip_end_date": trip_end_date,
+            "TRANSPORTATION_DISTANCE_IN_KM": distance,
+            "vehicleType": vehicle_type,
+            "Minimum_kms_to_be_covered_in_a_day": min_kms,
+            "Driver_Name": driver_name,
+            "Driver_MobileNo": driver_mobile,
+            "customerID": customer_id,
+            "customerNameCode": customer_name,
+            "supplierID": supplier_id,
+            "supplierNameCode": supplier_name,
+            "Material_Shipped": material_shipped,
         }
         producer.produce(
-            topic='logistics-data', 
-            key=str(uuid4()), 
-            value=data, 
-            on_delivery=delivery_report
+            topic="logistics-data",
+            key=str(uuid4()),
+            value=data,
+            on_delivery=delivery_report,
         )
         producer.flush()
         time.sleep(2)
-    
+
 
 print(produce(2))
