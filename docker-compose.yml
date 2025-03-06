@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  producer:
+    build:
+      context: .
+      dockerfile: ./producer/Dockerfile
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-sa.json
+    volumes:
+      - ./gcp-sa.json:/app/gcp-sa.json
+    deploy:
+      replicas: 2
+  consumer:
+    build:
+      context: .
+      dockerfile: ./consumer/Dockerfile
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-sa.json
+    volumes:
+      - ./gcp-sa.json:/app/gcp-sa.json
+    deploy:
+      replicas: 2
+    depends_on:
+      - producer
+  api:
+    build: 
+      context: .
+      dockerfile: ./api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-sa.json
+    volumes:
+      - ./gcp-sa.json:/app/gcp-sa.json
+    depends_on:
+      - consumer

@@ -3,9 +3,8 @@ from confluent_kafka import DeserializingConsumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.serialization import StringDeserializer
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
 from common.config import *
+from common.mongodb_client import db
 
 # Kafka configuration
 kafka_config = {
@@ -55,27 +54,14 @@ consumer = DeserializingConsumer(
 )
 consumer.subscribe(["logistics-data"])
 
-# mongodb connetion string
-conn_string = mongodb_connection_str
-# Connect to MongoDB
-database_name = "logistics_data"
-collection_name = "logistics_data"
-collection = None
-try:
-    client = MongoClient(conn_string)
-    client.admin.command("ping")  # Test the connection
-    db = client[database_name]
-    collection = db[collection_name]
-except ConnectionFailure as e:
-    print(f"Failed to connect to MongoDB: {e}")
-except Exception as e:  # Catch other exceptions
-    print(f"An unexpected error occurred during MongoDB connection: {e}")
 
+collection_name = "logistics_data"
+collection = db[collection_name]
 
 # Continually read messages from Kafka
 try:
     while True:
-        msg = consumer.poll(1.0)  # How many seconds to wait for message
+        msg = consumer.poll(2.0)  # How many seconds to wait for message
         if msg is None:
             continue
         if msg.error():
@@ -86,8 +72,8 @@ try:
         print(f"Document inserted with id: {insert_result.inserted_id}")
 
         print(
-            "Successfully consumed record with key {} and value {}".format(
-                msg.key(), msg.value()
+            "Successfully consumed record with key {}".format(
+                msg.key()
             )
         )
 

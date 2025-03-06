@@ -217,4 +217,4 @@ def produce(num_rows=100):
         time.sleep(2)
 
 
-print(produce(2))
+print(produce(100))
