@@ -1,95 +1,86 @@
-# logistics-data-pipeline
-Logistics data pipeline using Kafka, MongoDB, and Avro, deployed with Docker and secured with GCP Secrets Manager.
+# Logistics Data Pipeline
 
-# Logistic Data Pipeline
+This project implements a data pipeline for processing logistics events. It consists of a producer, a consumer, and an API.
 
-This project implements a data pipeline for processing and analyzing logistic data. It utilizes Docker and Docker Compose for containerization and orchestration, ensuring a consistent and reproducible environment.
+## Architecture
 
-## Project Structure
-logistic-data-pipeline/
-├── docker-compose.yml
-├── Dockerfile
-├── src/
-│   ├── data_ingestion.py
-│   ├── data_processing.py
-│   ├── data_analysis.py
-│   └── main.py
-├── data/
-│   ├── raw/
-│   │   └── logistic_data.csv
-│   └── processed/
-├── README.md
 
-* **`docker-compose.yml`**: Defines the services, networks, and volumes for the project.
-* **`Dockerfile`**: Specifies the instructions for building the Docker image.
-* **`src/`**: Contains the Python source code for the pipeline.
-    * `data_ingestion.py`: Handles data ingestion from the raw data source.
-    * `data_processing.py`: Performs data cleaning and transformation.
-    * `data_analysis.py`: Executes data analysis and generates reports.
-    * `main.py`: Orchestrates the entire pipeline.
-* **`data/`**: Stores the raw and processed data.
-    * `raw/`: Contains the original logistic data (`logistic_data.csv`).
-    * `processed/`: Stores the processed data.
-* **`README.md`**: This document.
+The pipeline follows these steps:
+
+1.  **Producer:** Generates simulated logistics events and publishes them to a Kafka topic.
+2.  **Consumer:** Consumes the events from the Kafka topic and stores them in a MongoDB database.
+3.  **API:** Provides endpoints to retrieve and query the logistics data from MongoDB.
 
 ## Prerequisites
 
-* Docker: [Install Docker](https://docs.docker.com/get-docker/)
-* Docker Compose: [Install Docker Compose](https://docs.docker.com/compose/install/)
+* Google Cloud Platform (GCP) account
+* `gcloud` CLI installed and configured
+* Docker and Docker Compose installed
+* MongoDB Atlas account (or a self-hosted MongoDB instance)
+* Confluent Cloud account (or a self-hosted Kafka cluster)
 
-## Getting Started
+## Setup
 
-1.  **Clone the repository:**
+1.  **GCP Secrets Manager:**
+    * Create a GCP project.
+    * Enable the Secrets Manager API.
+    * Create secrets for your Confluent Cloud API key and secret:
+        * Navigate to "Secrets Manager" in the GCP Console.
+        * Click "Create Secret".
+        * Enter a secret name (e.g., `CONFLUENT_API_KEY`).
+        * Enter the secret value (your Confluent Cloud API key).
+        * Repeat for `CONFLUENT_API_SECRET`.
+    * Grant the service account that will be used by the docker containers the "Secret Manager Secret Accessor" role.
 
-    ```bash
-    git clone <your_repository_url>
-    cd logistic-data-pipeline
-    ```
+2.  **Service Account Key File:**
+    * Create a service account in the GCP Console (IAM & Admin > Service Accounts).
+    * Download the service account JSON key file (`gcp-sa.json`).
+    * Place the `gcp-sa.json` file in the root directory of the project. **Never commit this file to version control.**
 
-2.  **Build and run the Docker containers:**
+3.  **MongoDB Setup:**
+    * Create a MongoDB database.
+    * Obtain your MongoDB connection URI.
+    * Set the `MONGODB_URI` and `MONGODB_DATABASE` variables inside of `common/config.py`.
 
-    ```bash
-    docker-compose up --build
-    ```
+4.  **Confluent Cloud Setup:**
+    * Create a Confluent Cloud account.
+    * Create a Kafka cluster.
+    * Create a Kafka topic.
+    * Obtain your Kafka bootstrap servers.
+    * Set the `KAFKA_BOOTSTRAP_SERVERS` variable inside of `common/config.py`.
 
-    This command will:
+5.  **Environment Configuration:**
+    * Open `common/config.py` and set the following variables:
+        * `MONGODB_URI`: Your MongoDB connection URI.
+        * `MONGODB_DATABASE`: Your MongoDB database name.
+        * `KAFKA_BOOTSTRAP_SERVERS`: Your Confluent Cloud Kafka bootstrap servers.
+        * `KAFKA_TOPIC`: Your Kafka topic name.
 
-    * Build the Docker image using the `Dockerfile`.
-    * Start the container defined in `docker-compose.yml`.
-    * Run the main.py file inside the container, which will execute the data pipeline.
+6.  **Build and Run:**
+    * From the project root directory, run:
 
-3.  **View the processed data:**
+        ```bash
+        docker-compose up --build -d
+        ```
 
-    * The processed data will be stored in the `data/processed/` directory. You can inspect these files to see the results of the pipeline.
+    * This will build and start the producer, consumer, and API containers.
 
-## Pipeline Description
+## Using the API
 
-The logistic data pipeline performs the following steps:
+* The API is accessible at `http://localhost:8000`.
+* API documentation is available at `http://localhost:8000/docs`.
 
-1.  **Data Ingestion:**
-    * Reads the raw logistic data from `data/raw/logistic_data.csv`.
-2.  **Data Processing:**
-    * Cleans and transforms the data (e.g., handling missing values, data type conversions).
-    * The processed data is saved to the `data/processed/` directory.
-3.  **Data Analysis:**
-    * Performs statistical analysis or generates reports based on the processed data.
-    * Analysis results are saved or displayed.
+### API Endpoints
 
-## Customization
+* **GET /logistics/events/**: Retrieves all logistics events. Supports query parameters for filtering:
+    * `order_id`: Filter by order ID.
+    * `location`: Filter by location.
+    * `status`: Filter by status.
+    * `start_timestamp`: Filter by start timestamp.
+    * `end_timestamp`: Filter by end timestamp.
+* **GET /logistics/events/{order_id}**: Retrieves events for a specific order ID.
 
-* **Data Source:**
-    * To use a different data source, replace `data/raw/logistic_data.csv` with your own data file.
-    * Modify `src/data_ingestion.py` to handle the new data format.
-* **Data Processing and Analysis:**
-    * Customize the data processing and analysis steps by modifying `src/data_processing.py` and `src/data_analysis.py`.
-* **Docker Configuration:**
-    * Adjust the Dockerfile and docker-compose.yml files to suit your specific requirements.
-    * Add or remove python packages from the dockerfile as needed.
-    * Adjust the context and dockerfile directives inside of the docker compose file if you change the location of your dockerfile.
-
-## Cleaning Up
-
-To stop and remove the containers:
+### Example curl request
 
 ```bash
-docker-compose down
+curl "http://localhost:8000/logistics/events/?location=New%20York&status=Shipped"
